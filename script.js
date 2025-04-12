@@ -1,8 +1,8 @@
 let sentence = [];
 let lastGesture = "";
 let lastGestureTime = 0;
-let isHoldingKey = false; // Tracks if the space key is being held
-let keyHoldTimer = null;  // Timer to track key hold duration
+let isHoldingKey = false;
+let keyHoldTimer = null;
 
 const videoElement = document.getElementById('webcam');
 const canvasElement = document.getElementById('output');
@@ -40,13 +40,13 @@ function compareGestures(a, b) {
 function saveCustomGesture() {
   const label = document.getElementById("customLabel").value.trim();
   if (!label || !latestLandmarks) {
-    alert("Please enter a name and show your hand.");
+    showToast("Please enter a name and show your hand.");
     return;
   }
   const normalized = normalizeLandmarks(latestLandmarks);
   customGestures.push({ label, landmarks: normalized });
   localStorage.setItem("savedGestures", JSON.stringify(customGestures));
-  alert(`Gesture "${label}" saved!`);
+  showToast(`Gesture "${label}" saved!`);
   renderSavedGestures();
 }
 
@@ -70,11 +70,11 @@ function loadGestures() {
         customGestures.length = 0;
         customGestures.push(...data);
         localStorage.setItem("savedGestures", JSON.stringify(customGestures));
-        alert("Custom gestures loaded!");
+        showToast("Custom gestures loaded!");
         renderSavedGestures();
       }
     } catch {
-      alert("Invalid file format.");
+      showToast("Invalid file format.");
     }
   };
   reader.readAsText(file);
@@ -134,11 +134,20 @@ hands.onResults((results) => {
       drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
       drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
 
+      if (results.multiHandedness && results.multiHandedness.length > 0) {
+        const confidence = results.multiHandedness[0].score;
+        canvasCtx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        canvasCtx.fillRect(10, 10, 160, 30);
+        canvasCtx.fillStyle = "lime";
+        canvasCtx.font = "18px Inter, sans-serif";
+        canvasCtx.fillText(`Confidence: ${(confidence * 100).toFixed(1)}%`, 20, 32);
+      }
+
       let gesture = "Unknown";
+      let bestMatch = { label: "Unknown", score: Infinity };
 
       if (customGestures.length > 0) {
         const current = normalizeLandmarks(landmarks);
-        let bestMatch = { label: "Unknown", score: Infinity };
 
         for (const gestureExample of customGestures) {
           const score = compareGestures(gestureExample.landmarks, current);
@@ -148,18 +157,23 @@ hands.onResults((results) => {
         if (bestMatch.score < 0.2) {
           gesture = bestMatch.label + " 🌟";
         }
+
+        if (bestMatch.score < 0.5) {
+          document.getElementById("ghost-label").textContent = `Best guess: ${bestMatch.label} (${bestMatch.score.toFixed(2)})`;
+        } else {
+          document.getElementById("ghost-label").textContent = ``;
+        }
       }
 
       document.getElementById("label").textContent = gesture;
 
-      // Store gestures when the space key is held down
       const now = Date.now();
       if (gesture !== "Unknown" && gesture !== lastGesture && (now - lastGestureTime > 1000)) {
-        if (isHoldingKey) {  // Only store if the key is being held
-          sentence.push(gesture.replace(" 🌟", ""));  // Add gesture to sentence
+        if (isHoldingKey) {
+          sentence.push(gesture.replace(" 🌟", ""));
           lastGesture = gesture;
           lastGestureTime = now;
-          updateSentenceDisplay();  // Update UI with new sentence
+          updateSentenceDisplay();
         }
       }
 
@@ -168,6 +182,7 @@ hands.onResults((results) => {
       document.getElementById("history").innerHTML = "History:<br>" + gestureHistory.join("<br>");
     }
   }
+
   canvasCtx.restore();
 });
 
@@ -181,22 +196,21 @@ const camera = new Camera(videoElement, {
 camera.start();
 
 function updateSentenceDisplay() {
-    const container = document.getElementById("sentence-bubbles");
-    container.innerHTML = "";
-  
-    if (sentence.length === 0) {
-      container.innerHTML = `<span style="opacity: 0.6;">[ Start signing to build a sentence... ]</span>`;
-      return;
-    }
-  
-    sentence.forEach(word => {
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-      bubble.textContent = word;
-      container.appendChild(bubble);
-    });
+  const container = document.getElementById("sentence-bubbles");
+  container.innerHTML = "";
+
+  if (sentence.length === 0) {
+    container.innerHTML = `<span style="opacity: 0.6;">[ Start signing to build a sentence... ]</span>`;
+    return;
   }
-  
+
+  sentence.forEach(word => {
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = word;
+    container.appendChild(bubble);
+  });
+}
 
 function speakSentence() {
   if (sentence.length === 0) return;
@@ -207,7 +221,7 @@ function speakSentence() {
 function copySentence() {
   const text = sentence.join(" ");
   navigator.clipboard.writeText(text);
-  alert("Sentence copied to clipboard!");
+  showToast("Sentence copied to clipboard!");
 }
 
 function clearSentence() {
@@ -215,33 +229,45 @@ function clearSentence() {
   updateSentenceDisplay();
 }
 
-// Handle keydown event to start holding
 document.addEventListener("keydown", (e) => {
-  if (e.key === " " && !isHoldingKey) { // Space key pressed
+  if (e.key === " " && !isHoldingKey) {
     isHoldingKey = true;
   }
 });
 
-// Handle keyup event to stop holding
 document.addEventListener("keyup", (e) => {
-  if (e.key === " " && isHoldingKey) { // Space key released
+  if (e.key === " " && isHoldingKey) {
     isHoldingKey = false;
   }
 });
+
 function setThemeFromSystem() {
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      document.body.classList.add("dark");
-    }
+  if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    document.body.classList.add("dark");
   }
-  
-  document.getElementById("toggleThemeBtn").addEventListener("click", () => {
-    document.body.classList.toggle("dark");
-    localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
-  });
-  
-  window.addEventListener("DOMContentLoaded", () => {
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme === "dark") document.body.classList.add("dark");
-    else if (!storedTheme) setThemeFromSystem();
-  });
+}
+
+document.getElementById("toggleThemeBtn").addEventListener("click", () => {
+  document.body.classList.toggle("dark");
+  localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const storedTheme = localStorage.getItem("theme");
+  if (storedTheme === "dark") document.body.classList.add("dark");
+  else if (!storedTheme) setThemeFromSystem();
+});
+
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 100);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
+
   

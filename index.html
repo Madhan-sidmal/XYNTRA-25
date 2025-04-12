@@ -19,7 +19,9 @@
         <video id="webcam" autoplay playsinline width="640" height="480"></video>
         <canvas id="output" width="640" height="480" style="display: none;"></canvas>
         <h2 id="gesture-label">Gesture: <span id="label">Detecting...</span></h2>
-      </div>
+        <p id="ghost-label" style="opacity: 0.5; font-size: 14px; margin-top: 4px;">Best guess: ...</p>
+
+    </div>
   
       <div class="card" id="custom-controls">
         <input type="text" id="customLabel" placeholder="Enter custom gesture label" />
@@ -41,17 +43,12 @@
         </div>
       </div>
       
-  
     <!-- Mediapipe & JS scripts stay the same -->
   
-  
-  
-
-  <!-- Mediapipe & Drawing Library -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    
   <!-- Main Script -->
   <script src="script.js"></script>
 </body>
