@@ -44,10 +44,17 @@
 
       if (results.multiHandLandmarks) {
         for (const landmarks of results.multiHandLandmarks) {
-          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
-                         { color: '#00FF00', lineWidth: 3 });
-          drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
-        }
+  drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
+                 { color: '#00FF00', lineWidth: 3 });
+  drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
+
+  // 👇 Log landmark data
+  console.log("Landmark positions:");
+  landmarks.forEach((point, index) => {
+    console.log(`Point ${index}: x=${point.x.toFixed(3)}, y=${point.y.toFixed(3)}, z=${point.z.toFixed(3)}`);
+  });
+}
+y
       }
 
       canvasCtx.restore();
