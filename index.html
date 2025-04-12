@@ -23,11 +23,10 @@
       font-family: sans-serif;
     }
     #gesture-label {
-  font-family: monospace;
-  font-size: 24px;
-  margin-top: 500px;
-}
-
+      font-family: monospace;
+      font-size: 24px;
+      margin-top: 500px;
+    }
   </style>
 </head>
 <body>
@@ -46,7 +45,92 @@
     const canvasElement = document.getElementById('output');
     const canvasCtx = canvasElement.getContext('2d');
 
-    // Set up Mediapipe Hands
+    let lastSpoken = "";
+    let speakTimeout;
+
+    function speakGesture(gesture) {
+      if (gesture === lastSpoken || gesture === "Unknown") return;
+
+      lastSpoken = gesture;
+
+      clearTimeout(speakTimeout);
+      speakTimeout = setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(gesture);
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        speechSynthesis.speak(utterance);
+      }, 300);
+    }
+
+    function isFingerFolded(landmarks, tipIndex, baseIndex) {
+      return landmarks[tipIndex].y > landmarks[baseIndex].y;
+    }
+
+    function isFingerExtended(landmarks, tipIndex, baseIndex) {
+      return landmarks[tipIndex].y < landmarks[baseIndex].y;
+    }
+
+    function detectGesture(landmarks) {
+      const [thumbTip, thumbBase] = [landmarks[4], landmarks[2]];
+      const [indexTip, indexBase] = [landmarks[8], landmarks[6]];
+      const [middleTip, middleBase] = [landmarks[12], landmarks[10]];
+      const [ringTip, ringBase] = [landmarks[16], landmarks[14]];
+      const [pinkyTip, pinkyBase] = [landmarks[20], landmarks[18]];
+
+      const thumbFolded = thumbTip.y > thumbBase.y;
+      const indexFolded = indexTip.y > indexBase.y;
+      const middleFolded = middleTip.y > middleBase.y;
+      const ringFolded = ringTip.y > ringBase.y;
+      const pinkyFolded = pinkyTip.y > pinkyBase.y;
+
+      const indexExtended = indexTip.y < indexBase.y;
+      const middleExtended = middleTip.y < middleBase.y;
+      const ringExtended = ringTip.y < ringBase.y;
+      const pinkyExtended = pinkyTip.y < pinkyBase.y;
+      const thumbExtended = thumbTip.x < thumbBase.x;
+
+      // ✊ A – All folded
+      if (thumbFolded && indexFolded && middleFolded && ringFolded && pinkyFolded) {
+        return "A ✊";
+      }
+
+      // ✋ Open – All extended
+      if (!thumbFolded && !indexFolded && !middleFolded && !ringFolded && !pinkyFolded) {
+        return "Open ✋";
+      }
+
+      // 👉 Point – index extended, rest folded
+      if (indexExtended && middleFolded && ringFolded && pinkyFolded) {
+        return "Point 👉";
+      }
+
+      // 👍 Thumbs Up – thumb extended horizontally, others folded
+      if (thumbExtended && indexFolded && middleFolded && ringFolded && pinkyFolded) {
+        return "Thumbs Up 👍";
+      }
+
+      // ✌️ V – index + middle extended, ring + pinky folded
+      if (indexExtended && middleExtended && ringFolded && pinkyFolded) {
+        return "V Sign ✌️";
+      }
+
+      // 🤘 Rock – index and pinky extended, middle and ring folded
+      if (indexExtended && pinkyExtended && middleFolded && ringFolded) {
+        return "Rock 🤘";
+      }
+
+      // 👌 OK – thumb tip close to index tip
+      const dx = thumbTip.x - indexTip.x;
+      const dy = thumbTip.y - indexTip.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < 0.05 && middleExtended && ringExtended && pinkyExtended) {
+        return "OK 👌";
+      }
+
+      return "Unknown";
+    }
+
     const hands = new Hands({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
@@ -68,50 +152,14 @@
           drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
           drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
 
-          // Log landmark data
-          console.log("Landmark positions:", landmarks);
-
-          // Process and display gesture
           const gesture = detectGesture(landmarks);
           document.getElementById("label").textContent = gesture;
+          speakGesture(gesture);
         }
       }
       canvasCtx.restore();
     });
 
-    // Helper: check if a finger is folded
-    function isFingerFolded(landmarks, tipIndex, baseIndex) {
-      return landmarks[tipIndex].y > landmarks[baseIndex].y;
-    }
-
-    // Helper: check if a finger is extended
-    function isFingerExtended(landmarks, tipIndex, baseIndex) {
-      return landmarks[tipIndex].y < landmarks[baseIndex].y;
-    }
-
-    // Detect gesture based on landmarks
-    function detectGesture(landmarks) {
-      const thumbIsFolded = isFingerFolded(landmarks, 4, 2);
-      const indexIsFolded = isFingerFolded(landmarks, 8, 6);
-      const middleIsFolded = isFingerFolded(landmarks, 12, 10);
-      const ringIsFolded = isFingerFolded(landmarks, 16, 14);
-      const pinkyIsFolded = isFingerFolded(landmarks, 20, 18);
-
-      const indexIsExtended = isFingerExtended(landmarks, 8, 6);
-      const othersFolded = middleIsFolded && ringIsFolded && pinkyIsFolded;
-
-      if (thumbIsFolded && indexIsFolded && middleIsFolded && ringIsFolded && pinkyIsFolded) {
-        return "A ✊";
-      } else if (!thumbIsFolded && !indexIsFolded && !middleIsFolded && !ringIsFolded && !pinkyIsFolded) {
-        return "Open ✋";
-      } else if (indexIsExtended && othersFolded) {
-        return "Point 👉";
-      } else {
-        return "Unknown";
-      }
-    }
-
-    // Use camera from Mediapipe Utils
     const camera = new Camera(videoElement, {
       onFrame: async () => {
         await hands.send({ image: videoElement });
