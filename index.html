@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Language Input - Mediapipe</title>
+  <style>
+    body { margin: 0; text-align: center; background-color: #111; color: #fff; }
+    video, canvas { position: absolute; left: 50%; transform: translateX(-50%); }
+    canvas { z-index: 1; }
+    h1 { margin-top: 20px; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+  <h1>✋ Sign Language Input</h1>
+  <video id="webcam" autoplay playsinline width="640" height="480"></video>
+  <canvas id="output" width="640" height="480"></canvas>
+
+  <!-- Mediapipe & Drawing Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
+
+  <script>
+    const videoElement = document.getElementById('webcam');
+    const canvasElement = document.getElementById('output');
+    const canvasCtx = canvasElement.getContext('2d');
+
+    // Set up Mediapipe Hands
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.7
+    });
+
+    hands.onResults((results) => {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      if (results.multiHandLandmarks) {
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
+                         { color: '#00FF00', lineWidth: 3 });
+          drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
+        }
+      }
+
+      canvasCtx.restore();
+    });
+
+    // Use camera from Mediapipe Utils
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await hands.send({ image: videoElement });
+      },
+      width: 640,
+      height: 480
+    });
+
+    camera.start();
+  </script>
+</body>
+</html>
