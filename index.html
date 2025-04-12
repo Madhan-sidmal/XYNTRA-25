@@ -69,7 +69,6 @@
     let latestLandmarks = null;
     const customGestures = [];
 
-    // Load any saved custom gestures from localStorage
     const saved = localStorage.getItem("savedGestures");
     if (saved) {
       try {
@@ -80,7 +79,6 @@
       }
     }
 
-    // Speak out the detected gesture using the Web Speech API.
     function speakGesture(gesture) {
       if (gesture === lastSpoken || gesture === "Unknown") return;
       lastSpoken = gesture;
@@ -94,52 +92,13 @@
       }, 300);
     }
 
-    // Helper functions to determine finger state using landmarks.
-    function isFingerFolded(landmarks, tipIndex, baseIndex) {
-      return landmarks[tipIndex].y > landmarks[baseIndex].y;
+    function normalizeLandmarks(landmarks) {
+      const base = landmarks[0]; // wrist
+      const translated = landmarks.map(p => ({ x: p.x - base.x, y: p.y - base.y }));
+      const scale = Math.max(...translated.map(p => Math.sqrt(p.x * p.x + p.y * p.y)));
+      return translated.map(p => ({ x: p.x / scale, y: p.y / scale }));
     }
 
-    function isFingerExtended(landmarks, tipIndex, baseIndex) {
-      return landmarks[tipIndex].y < landmarks[baseIndex].y;
-    }
-
-    // Predefined gesture detection based on relative positions of landmarks.
-    function detectGesture(landmarks) {
-      const [thumbTip, thumbBase] = [landmarks[4], landmarks[2]];
-      const [indexTip, indexBase] = [landmarks[8], landmarks[6]];
-      const [middleTip, middleBase] = [landmarks[12], landmarks[10]];
-      const [ringTip, ringBase] = [landmarks[16], landmarks[14]];
-      const [pinkyTip, pinkyBase] = [landmarks[20], landmarks[18]];
-
-      const thumbFolded = thumbTip.y > thumbBase.y;
-      const indexFolded = indexTip.y > indexBase.y;
-      const middleFolded = middleTip.y > middleBase.y;
-      const ringFolded = ringTip.y > ringBase.y;
-      const pinkyFolded = pinkyTip.y > pinkyBase.y;
-
-      const indexExtended = indexTip.y < indexBase.y;
-      const middleExtended = middleTip.y < middleBase.y;
-      const ringExtended = ringTip.y < ringBase.y;
-      const pinkyExtended = pinkyTip.y < pinkyBase.y;
-      const thumbExtended = thumbTip.x < thumbBase.x;
-
-      if (thumbFolded && indexFolded && middleFolded && ringFolded && pinkyFolded) return "A ✊";
-      if (!thumbFolded && !indexFolded && !middleFolded && !ringFolded && !pinkyFolded) return "Open ✋";
-      if (indexExtended && middleFolded && ringFolded && pinkyFolded) return "Point 🖐";
-      if (thumbExtended && indexFolded && middleFolded && ringFolded && pinkyFolded) return "Thumbs Up 👍";
-      if (indexExtended && middleExtended && ringFolded && pinkyFolded) return "V Sign ✌";
-      if (indexExtended && pinkyExtended && middleFolded && ringFolded) return "Rock 🤘";
-
-      // "OK" gesture: thumb and index are close, with other fingers extended.
-      const dx = thumbTip.x - indexTip.x;
-      const dy = thumbTip.y - indexTip.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance < 0.05 && middleExtended && ringExtended && pinkyExtended) return "OK 👌";
-
-      return "Unknown";
-    }
-
-    // Compares two sets of landmarks and returns a similarity score.
     function compareGestures(a, b) {
       let total = 0;
       for (let i = 0; i < a.length; i++) {
@@ -147,24 +106,21 @@
         const dy = a[i].y - b[i].y;
         total += dx * dx + dy * dy;
       }
-      return Math.sqrt(total);
+      return Math.sqrt(total / a.length);
     }
 
-    // Save the current hand landmarks as a custom gesture
     function saveCustomGesture() {
       const label = document.getElementById("customLabel").value.trim();
       if (!label || !latestLandmarks) {
         alert("Please enter a name and show your hand.");
         return;
       }
-      const normalized = latestLandmarks.map(p => ({ x: p.x, y: p.y }));
-      console.log("Saving custom gesture:", label, normalized);
+      const normalized = normalizeLandmarks(latestLandmarks);
       customGestures.push({ label, landmarks: normalized });
       localStorage.setItem("savedGestures", JSON.stringify(customGestures));
       alert(`Gesture "${label}" saved!`);
     }
 
-    // Download all custom gestures as a JSON file
     function downloadGestures() {
       const blob = new Blob([JSON.stringify(customGestures, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -175,7 +131,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // Load custom gestures from a JSON file
     function loadGestures() {
       const fileInput = document.getElementById("gestureFile");
       const file = fileInput.files[0];
@@ -196,7 +151,6 @@
       reader.readAsText(file);
     }
 
-    // Initialize Mediapipe Hands solution with the provided settings.
     const hands = new Hands({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
@@ -219,22 +173,18 @@
           drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
           drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
 
-          let gesture = detectGesture(landmarks);
+          let gesture = "Unknown";
 
-          // If custom gestures have been saved, compare them to the current hand pose.
           if (customGestures.length > 0) {
-            const current = landmarks.map(p => ({ x: p.x, y: p.y }));
+            const current = normalizeLandmarks(landmarks);
             let bestMatch = { label: "Unknown", score: Infinity };
 
             for (const gestureExample of customGestures) {
               const score = compareGestures(gestureExample.landmarks, current);
-              // Log the score for debugging purposes.
-              console.log(`Comparing with ${gestureExample.label} -> score: ${score}`);
               if (score < bestMatch.score) bestMatch = { label: gestureExample.label, score };
             }
 
-            // Updated threshold here from 0.03 to 0.05 for better tolerance.
-            if (bestMatch.score < 0.05) {
+            if (bestMatch.score < 0.2) {
               gesture = bestMatch.label + " 🌟";
             }
           }
@@ -242,7 +192,6 @@
           document.getElementById("label").textContent = gesture;
           speakGesture(gesture);
 
-          // Update gesture history (keeping last 5 gestures)
           gestureHistory.unshift(gesture);
           if (gestureHistory.length > 5) gestureHistory.pop();
           document.getElementById("history").innerHTML = "History:<br>" + gestureHistory.join("<br>");
@@ -251,7 +200,6 @@
       canvasCtx.restore();
     });
 
-    // Set up the camera using Mediapipe's Camera Utils.
     const camera = new Camera(videoElement, {
       onFrame: async () => {
         await hands.send({ image: videoElement });
