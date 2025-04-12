@@ -1,3 +1,9 @@
+let sentence = [];
+let lastGesture = "";
+let lastGestureTime = 0;
+let isHoldingKey = false; // Tracks if the space key is being held
+let keyHoldTimer = null;  // Timer to track key hold duration
+
 const videoElement = document.getElementById('webcam');
 const canvasElement = document.getElementById('output');
 const canvasCtx = canvasElement.getContext('2d');
@@ -12,16 +18,6 @@ if (saved) {
   } catch (e) {
     console.warn("Failed to load gestures.");
   }
-}
-
-function speakGesture(gesture) {
-  if (gesture === lastSpoken || gesture === "Unknown") return;
-  lastSpoken = gesture;
-  clearTimeout(speakTimeout);
-  speakTimeout = setTimeout(() => {
-    const utterance = new SpeechSynthesisUtterance(gesture);
-    speechSynthesis.speak(utterance);
-  }, 300);
 }
 
 function normalizeLandmarks(landmarks) {
@@ -155,7 +151,17 @@ hands.onResults((results) => {
       }
 
       document.getElementById("label").textContent = gesture;
-      speakGesture(gesture);
+
+      // Store gestures when the space key is held down
+      const now = Date.now();
+      if (gesture !== "Unknown" && gesture !== lastGesture && (now - lastGestureTime > 1000)) {
+        if (isHoldingKey) {  // Only store if the key is being held
+          sentence.push(gesture.replace(" 🌟", ""));  // Add gesture to sentence
+          lastGesture = gesture;
+          lastGestureTime = now;
+          updateSentenceDisplay();  // Update UI with new sentence
+        }
+      }
 
       gestureHistory.unshift(gesture);
       if (gestureHistory.length > 5) gestureHistory.pop();
@@ -173,3 +179,43 @@ const camera = new Camera(videoElement, {
   height: 480
 });
 camera.start();
+
+function updateSentenceDisplay() {
+  const el = document.getElementById("sentence-text");
+  if (sentence.length === 0) {
+    el.textContent = "[ Start signing to build a sentence... ]";
+  } else {
+    el.textContent = sentence.join(" ");
+  }
+}
+
+function speakSentence() {
+  if (sentence.length === 0) return;
+  const utter = new SpeechSynthesisUtterance(sentence.join(" "));
+  speechSynthesis.speak(utter);
+}
+
+function copySentence() {
+  const text = sentence.join(" ");
+  navigator.clipboard.writeText(text);
+  alert("Sentence copied to clipboard!");
+}
+
+function clearSentence() {
+  sentence = [];
+  updateSentenceDisplay();
+}
+
+// Handle keydown event to start holding
+document.addEventListener("keydown", (e) => {
+  if (e.key === " " && !isHoldingKey) { // Space key pressed
+    isHoldingKey = true;
+  }
+});
+
+// Handle keyup event to stop holding
+document.addEventListener("keyup", (e) => {
+  if (e.key === " " && isHoldingKey) { // Space key released
+    isHoldingKey = false;
+  }
+});

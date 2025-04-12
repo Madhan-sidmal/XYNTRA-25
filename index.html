@@ -22,6 +22,17 @@
 
   <div id="history"></div>
   <div id="savedGesturesList"></div>
+  <div id="sentence-container">
+    <h3>Sentence:</h3>
+    <p id="sentence-text">[ Start signing to build a sentence... ]</p>
+    <div class="sentence-buttons">
+      <button onclick="speakSentence()">🔊 Speak</button>
+      <button onclick="copySentence()">📋 Copy</button>
+      <button onclick="clearSentence()">🧹 Clear</button>
+    </div>
+  </div>
+  
+  
 
   <!-- Mediapipe & Drawing Library -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>

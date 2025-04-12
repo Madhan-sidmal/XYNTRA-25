@@ -107,4 +107,34 @@ body {
   #savedGesturesList button:hover {
     background-color: #b02a37;
   }
+  #sentence-container {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #ffffff;
+    color: #222;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 700px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.dark #sentence-container {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);
+  }
+  
+  #sentence-text {
+    font-size: 18px;
+    margin: 10px 0 15px;
+  }
+  
+  .sentence-buttons button {
+    margin-right: 8px;
+    background-color: #28a745;
+  }
+  
+  .sentence-buttons button:hover {
+    background-color: #218838;
+  }
   
