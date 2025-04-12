@@ -181,13 +181,22 @@ const camera = new Camera(videoElement, {
 camera.start();
 
 function updateSentenceDisplay() {
-  const el = document.getElementById("sentence-text");
-  if (sentence.length === 0) {
-    el.textContent = "[ Start signing to build a sentence... ]";
-  } else {
-    el.textContent = sentence.join(" ");
+    const container = document.getElementById("sentence-bubbles");
+    container.innerHTML = "";
+  
+    if (sentence.length === 0) {
+      container.innerHTML = `<span style="opacity: 0.6;">[ Start signing to build a sentence... ]</span>`;
+      return;
+    }
+  
+    sentence.forEach(word => {
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = word;
+      container.appendChild(bubble);
+    });
   }
-}
+  
 
 function speakSentence() {
   if (sentence.length === 0) return;
@@ -219,3 +228,20 @@ document.addEventListener("keyup", (e) => {
     isHoldingKey = false;
   }
 });
+function setThemeFromSystem() {
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      document.body.classList.add("dark");
+    }
+  }
+  
+  document.getElementById("toggleThemeBtn").addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+  });
+  
+  window.addEventListener("DOMContentLoaded", () => {
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme === "dark") document.body.classList.add("dark");
+    else if (!storedTheme) setThemeFromSystem();
+  });
+  

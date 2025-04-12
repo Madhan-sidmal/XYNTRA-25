@@ -2,6 +2,67 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  
+  :root {
+    --bg: #ffffff;
+    --text: #111111;
+    --card: #f5f5f5;
+    --accent: #0077ff;
+  }
+  
+  body.dark {
+    --bg: #121212;
+    --text: #e0e0e0;
+    --card: #1e1e1e;
+    --accent: #66ccff;
+  }
+  
+  #theme-toggle {
+    padding: 1rem;
+    text-align: right;
+  }
+  
+  button {
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0.3rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .app-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    justify-content: center;
+  }
+  
+  .card {
+    background-color: var(--card);
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    flex: 1 1 300px;
+    min-width: 300px;
+  }
+  
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f9f9f9;
     color: #222;
     display: flex;
@@ -136,5 +197,106 @@ body {
   
   .sentence-buttons button:hover {
     background-color: #218838;
+  }
+  .app-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .card {
+    background-color: var(--card);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    flex: 1 1 320px;
+    max-width: 700px;
+    min-width: 300px;
+    margin: 0.5rem;
+  }
+  @media (max-width: 768px) {
+    .app-container {
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    video, canvas {
+        margin-top: 20px;
+        border-radius: 12px;
+        border: 1px solid #ccc;
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+      }
+      
+  
+    .card {
+      width: 90%;
+    }
+  }
+  #sentence-bubbles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0 15px;
+  }
+  
+  .bubble {
+    background-color: var(--accent);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 16px;
+    animation: fadeInUp 0.4s ease;
+  }
+  
+  @keyframes fadeInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (max-width: 600px) {
+    button {
+      padding: 12px 18px;
+      font-size: 18px;
+      width: 100%;
+    }
+  
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      font-size: 16px;
+    }
+  
+    #custom-controls, #sentence-container, #history, #savedGesturesList {
+      width: 95%;
+      padding: 15px;
+    }
+  
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+    }
+  
+    #gesture-label {
+      font-size: 20px;
+      text-align: center;
+    }
+  
+    .sentence-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .bubble {
+      font-size: 15px;
+    }
   }
   

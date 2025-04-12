@@ -2,35 +2,48 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Sign Language Translator</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Sign Language Translator</h1>
-
-  <video id="webcam" autoplay playsinline width="640" height="480"></video>
-  <canvas id="output" width="640" height="480" style="display: none;"></canvas>
-
-  <h2 id="gesture-label">Gesture: <span id="label">Detecting...</span></h2>
-
-  <div id="custom-controls">
-    <input type="text" id="customLabel" placeholder="Enter custom gesture label" />
-    <button onclick="saveCustomGesture()">Save Gesture</button>
-    <button onclick="downloadGestures()">Download Gestures</button>
-    <input type="file" id="gestureFile" onchange="loadGestures()" />
-  </div>
-
-  <div id="history"></div>
-  <div id="savedGesturesList"></div>
-  <div id="sentence-container">
-    <h3>Sentence:</h3>
-    <p id="sentence-text">[ Start signing to build a sentence... ]</p>
-    <div class="sentence-buttons">
-      <button onclick="speakSentence()">🔊 Speak</button>
-      <button onclick="copySentence()">📋 Copy</button>
-      <button onclick="clearSentence()">🧹 Clear</button>
+    <div id="theme-toggle">
+      <button id="toggleThemeBtn">🌗 Toggle Theme</button>
     </div>
-  </div>
+  
+    <h1>Sign Language Translator</h1>
+  
+    <div class="app-container">
+      <div class="card">
+        <video id="webcam" autoplay playsinline width="640" height="480"></video>
+        <canvas id="output" width="640" height="480" style="display: none;"></canvas>
+        <h2 id="gesture-label">Gesture: <span id="label">Detecting...</span></h2>
+      </div>
+  
+      <div class="card" id="custom-controls">
+        <input type="text" id="customLabel" placeholder="Enter custom gesture label" />
+        <button onclick="saveCustomGesture()">Save Gesture</button>
+        <button onclick="downloadGestures()">Download Gestures</button>
+        <input type="file" id="gestureFile" onchange="loadGestures()" />
+      </div>
+  
+      <div class="card" id="history"></div>
+      <div class="card" id="savedGesturesList"></div>
+  
+      <div class="card" id="sentence-container">
+        <h3>Sentence:</h3>
+        <div id="sentence-bubbles"></div>
+        <div class="sentence-buttons">
+          <button onclick="speakSentence()">🔊 Speak</button>
+          <button onclick="copySentence()">📋 Copy</button>
+          <button onclick="clearSentence()">🧹 Clear</button>
+        </div>
+      </div>
+      
+  
+    <!-- Mediapipe & JS scripts stay the same -->
+  
   
   
 
