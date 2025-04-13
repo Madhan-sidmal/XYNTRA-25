@@ -1,3 +1,6 @@
+// ----------------------
+// Global Variables & Setup
+// ----------------------
 let sentence = [];
 let lastGesture = "";
 let lastGestureTime = 0;
@@ -11,15 +14,73 @@ const gestureHistory = [];
 let lastSpoken = "", speakTimeout, latestLandmarks = null;
 const customGestures = [];
 
-const saved = localStorage.getItem("savedGestures");
-if (saved) {
-  try {
-    customGestures.push(...JSON.parse(saved));
-  } catch (e) {
-    console.warn("Failed to load gestures.");
+// Instead of directly reading localStorage, load and decrypt saved gestures
+async function loadStoredGestures() {
+  const stored = localStorage.getItem("savedGestures");
+  if (stored) {
+    try {
+      const decrypted = await decryptData(stored);
+      const data = JSON.parse(decrypted);
+      customGestures.push(...data);
+    } catch (e) {
+      console.warn("Failed to load gestures securely:", e);
+    }
   }
 }
+loadStoredGestures();
 
+// ----------------------
+// Encryption Functions (Using AES-GCM)
+// ----------------------
+async function getCryptoKey() {
+  // For demonstration, using a hardcoded key.
+  // In production, use a secure method to generate/store keys.
+  const rawKey = new TextEncoder().encode("mysecretkey12345"); // 16-byte key for AES-128
+  return crypto.subtle.importKey(
+    "raw",
+    rawKey,
+    "AES-GCM",
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptData(plainText) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plainText);
+  const key = await getCryptoKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for AES-GCM
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    data
+  );
+  // Combine IV and encrypted data for storage
+  const buffer = new Uint8Array(encrypted);
+  const combined = new Uint8Array(iv.length + buffer.length);
+  combined.set(iv);
+  combined.set(buffer, iv.length);
+  // Convert to Base64 string
+  return btoa(String.fromCharCode(...combined));
+}
+
+async function decryptData(cipherText) {
+  const combined = Uint8Array.from(atob(cipherText), c => c.charCodeAt(0));
+  const iv = combined.slice(0, 12);
+  const data = combined.slice(12);
+  const key = await getCryptoKey();
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    data
+  );
+  const decoder = new TextDecoder();
+  return decoder.decode(decrypted);
+}
+
+// ----------------------
+// Utility Functions
+// ----------------------
 function normalizeLandmarks(landmarks) {
   const base = landmarks[0];
   const translated = landmarks.map(p => ({ x: p.x - base.x, y: p.y - base.y }));
@@ -37,7 +98,36 @@ function compareGestures(a, b) {
   return Math.sqrt(total / a.length);
 }
 
-function saveCustomGesture() {
+// Monitor hand position and give feedback if hand is too close to edge
+function monitorHandPosition(landmarks) {
+  const xs = landmarks.map(p => p.x);
+  const ys = landmarks.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  if (minX < 0.1 || maxX > 0.9 || minY < 0.1 || maxY > 0.9) {
+    showToast("Adjust hand position for better tracking!");
+  }
+}
+
+// ----------------------
+// Toast Notifications
+// ----------------------
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 100);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
+
+// ----------------------
+// Gesture Storage Functions
+// ----------------------
+async function saveCustomGesture() {
   const label = document.getElementById("customLabel").value.trim();
   if (!label || !latestLandmarks) {
     showToast("Please enter a name and show your hand.");
@@ -45,8 +135,13 @@ function saveCustomGesture() {
   }
   const normalized = normalizeLandmarks(latestLandmarks);
   customGestures.push({ label, landmarks: normalized });
-  localStorage.setItem("savedGestures", JSON.stringify(customGestures));
-  showToast(`Gesture "${label}" saved!`);
+  try {
+    const encrypted = await encryptData(JSON.stringify(customGestures));
+    localStorage.setItem("savedGestures", encrypted);
+  } catch(e) {
+    console.error("Encryption failed:", e);
+  }
+  showToast(`Gesture "${label}" saved securely!`);
   renderSavedGestures();
 }
 
@@ -69,7 +164,7 @@ function loadGestures() {
       if (Array.isArray(data)) {
         customGestures.length = 0;
         customGestures.push(...data);
-        localStorage.setItem("savedGestures", JSON.stringify(customGestures));
+        localStorage.setItem("savedGestures", JSON.stringify(customGestures)); // Save unencrypted file upload
         showToast("Custom gestures loaded!");
         renderSavedGestures();
       }
@@ -86,7 +181,6 @@ function renderSavedGestures() {
     container.innerHTML = "<strong>No saved gestures</strong>";
     return;
   }
-
   container.innerHTML = "<strong>Saved Gestures:</strong><br>";
   customGestures.forEach((g, index) => {
     const div = document.createElement("div");
@@ -102,16 +196,15 @@ function renderSavedGestures() {
 function deleteGesture(index) {
   if (!confirm(`Delete gesture "${customGestures[index].label}"?`)) return;
   customGestures.splice(index, 1);
-  localStorage.setItem("savedGestures", JSON.stringify(customGestures));
+  encryptData(JSON.stringify(customGestures))
+    .then(encrypted => localStorage.setItem("savedGestures", encrypted))
+    .catch(e => console.error("Encryption failed:", e));
   renderSavedGestures();
 }
 
-function toggleTheme() {
-  document.body.classList.toggle("dark");
-}
-
-renderSavedGestures();
-
+// ----------------------
+// MediaPipe Hands & Camera Setup
+// ----------------------
 const hands = new Hands({
   locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
 });
@@ -133,7 +226,8 @@ hands.onResults((results) => {
       latestLandmarks = landmarks;
       drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
       drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
-
+      
+      // Display confidence score if available
       if (results.multiHandedness && results.multiHandedness.length > 0) {
         const confidence = results.multiHandedness[0].score;
         canvasCtx.fillStyle = "rgba(0, 0, 0, 0.6)";
@@ -142,31 +236,31 @@ hands.onResults((results) => {
         canvasCtx.font = "18px Inter, sans-serif";
         canvasCtx.fillText(`Confidence: ${(confidence * 100).toFixed(1)}%`, 20, 32);
       }
-
+      
+      // Monitor hand position for better tracking
+      monitorHandPosition(landmarks);
+      
       let gesture = "Unknown";
       let bestMatch = { label: "Unknown", score: Infinity };
 
       if (customGestures.length > 0) {
         const current = normalizeLandmarks(landmarks);
-
         for (const gestureExample of customGestures) {
           const score = compareGestures(gestureExample.landmarks, current);
           if (score < bestMatch.score) bestMatch = { label: gestureExample.label, score };
         }
-
         if (bestMatch.score < 0.2) {
           gesture = bestMatch.label + " 🌟";
         }
-
         if (bestMatch.score < 0.5) {
           document.getElementById("ghost-label").textContent = `Best guess: ${bestMatch.label} (${bestMatch.score.toFixed(2)})`;
         } else {
-          document.getElementById("ghost-label").textContent = ``;
+          document.getElementById("ghost-label").textContent = "";
         }
       }
-
+      
       document.getElementById("label").textContent = gesture;
-
+      
       const now = Date.now();
       if (gesture !== "Unknown" && gesture !== lastGesture && (now - lastGestureTime > 1000)) {
         if (isHoldingKey) {
@@ -176,13 +270,12 @@ hands.onResults((results) => {
           updateSentenceDisplay();
         }
       }
-
+      
       gestureHistory.unshift(gesture);
       if (gestureHistory.length > 5) gestureHistory.pop();
       document.getElementById("history").innerHTML = "History:<br>" + gestureHistory.join("<br>");
     }
   }
-
   canvasCtx.restore();
 });
 
@@ -195,15 +288,16 @@ const camera = new Camera(videoElement, {
 });
 camera.start();
 
+// ----------------------
+// Sentence & UI Functions
+// ----------------------
 function updateSentenceDisplay() {
   const container = document.getElementById("sentence-bubbles");
   container.innerHTML = "";
-
   if (sentence.length === 0) {
     container.innerHTML = `<span style="opacity: 0.6;">[ Start signing to build a sentence... ]</span>`;
     return;
   }
-
   sentence.forEach(word => {
     const bubble = document.createElement("div");
     bubble.className = "bubble";
@@ -229,6 +323,9 @@ function clearSentence() {
   updateSentenceDisplay();
 }
 
+// ----------------------
+// Key Event Handlers for Gesture Chaining
+// ----------------------
 document.addEventListener("keydown", (e) => {
   if (e.key === " " && !isHoldingKey) {
     isHoldingKey = true;
@@ -241,6 +338,9 @@ document.addEventListener("keyup", (e) => {
   }
 });
 
+// ----------------------
+// Theme Toggle & Auto-Detection
+// ----------------------
 function setThemeFromSystem() {
   if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
     document.body.classList.add("dark");
@@ -258,6 +358,9 @@ window.addEventListener("DOMContentLoaded", () => {
   else if (!storedTheme) setThemeFromSystem();
 });
 
+// ----------------------
+// Toast Notification Function
+// ----------------------
 function showToast(message) {
   const toast = document.createElement("div");
   toast.className = "toast";
@@ -269,5 +372,3 @@ function showToast(message) {
     setTimeout(() => toast.remove(), 500);
   }, 3000);
 }
-
-  
