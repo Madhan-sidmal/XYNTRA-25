@@ -3,59 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>AI sign Language Translator</title>
+  <title>AI Sign Language Translator</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div id="theme-toggle">
-      <button id="toggleThemeBtn">🌗 Toggle Theme</button>
-    </div>
-  
+  <!-- Header -->
+  <header class="header">
+    <img src="ai3.png" alt="Logo" class="logo" />
     <h1>AI sign Language Translator</h1>
-  
-    <div class="app-container">
-      <div class="card">
-        <div id="camera-container" style="position: relative; width: 640px; height: 480px;">
-            <video id="webcam" autoplay playsinline width="640" height="480"></video>
-            <canvas id="output" width="640" height="480" style="position: absolute; top: 0; left: 0;"></canvas>
-          </div>
-                
-        <h2 id="gesture-label">Gesture: <span id="label">Detecting...</span></h2>
-        <p id="ghost-label" style="opacity: 0.5; font-size: 14px; margin-top: 4px;">Best guess: ...</p>
+    <button id="toggleThemeBtn" title="Toggle Dark Mode">🌗</button>
+  </header>
 
-    </div>
-  
-      <div class="card" id="custom-controls">
+  <!-- Main Content -->
+  <main class="app-container">
+    <!-- Camera Feed Card -->
+    <section class="card camera-card">
+      <video id="webcam" autoplay playsinline width="640" height="480"></video>
+      <canvas id="output" width="640" height="480"></canvas>
+      <h2 id="gesture-label">Gesture: <span id="label">Detecting...</span></h2>
+      <p id="ghost-label">Best guess: ...</p>
+    </section>
+
+    <!-- Controls & Sentence Builder Card -->
+    <section class="card controls-card">
+      <div id="custom-controls">
         <input type="text" id="customLabel" placeholder="Enter custom gesture label" />
         <button onclick="saveCustomGesture()">Save Gesture</button>
-        <button onclick="downloadGestures()">Download Gestures</button>
+        <button onclick="downloadGestures()">Download</button>
         <input type="file" id="gestureFile" onchange="loadGestures()" />
       </div>
-  
-      <div class="card" id="history"></div>
-      <div class="card" id="savedGesturesList"></div>
-  
-      <div class="card" id="sentence-container">
+
+      <div id="sentence-container">
         <h3>Sentence:</h3>
         <div id="sentence-bubbles"></div>
         <div class="sentence-buttons">
-          <button onclick="speakSentence()">🔊 Speak</button>
-          <button onclick="copySentence()">📋 Copy</button>
-          <button onclick="clearSentence()">🧹 Clear</button>
+          <button onclick="speakSentence()">🔊</button>
+          <button onclick="copySentence()">📋</button>
+          <button onclick="clearSentence()">🧹</button>
         </div>
       </div>
-      
-    <!-- Mediapipe & JS scripts stay the same -->
-  
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    
-  
-  <!-- Main Script -->
+    </section>
+  </main>
+
+  <!-- Gesture Info -->
+  <section class="bottom-cards">
+    <div class="card" id="history"></div>
+    <div class="card" id="savedGesturesList"></div>
+  </section>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
   <script src="script.js"></script>
-  <div id="logo-container">
-    <img src="ai3.png" alt="Tech Tribes Logo" id="logo-image" />
 </body>
 </html>
