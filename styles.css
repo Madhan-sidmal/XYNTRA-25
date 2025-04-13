@@ -175,7 +175,6 @@ button:hover {
   font-weight: 500;
   animation: fadeIn 0.3s ease-in-out;
 }
-
 .sentence-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -256,4 +255,7 @@ button:hover {
   #savedGesturesList {
     width: 100%;
   }
+}
+html {
+  scroll-behavior: smooth;
 }

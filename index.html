@@ -7,9 +7,19 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <nav style="background-color: var(--secondary-color); padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-color);">🧭 Menu</div>
+    <div style="display: flex; gap: 15px;">
+      <a href="#canvas" style="color: var(--text-color); text-decoration: none;">🎥 Camera</a>
+      <a href="#gesture-label" style="color: var(--text-color); text-decoration: none;">📋 Sentence</a>
+      <a href="#savedGesturesList" style="color: var(--text-color); text-decoration: none;">💾 Gestures</a>
+      <a href="#customLabel" style="color: var(--text-color); text-decoration: none;">➕ Add</a>
+    </div>
+  </nav>
+  
   <!-- Header -->
   <header class="header">
-    <img src="ai3.png" alt="Logo" class="logo" />
+    <img src="Screenshot_2025-04-13-15-30-40-848_com.canva.editor-edit.jpg" alt="Logo" class="logo" />
     <h1>AI sign Language Translator</h1>
     <button id="toggleThemeBtn" title="Toggle Dark Mode">🌗</button>
   </header>
@@ -59,5 +69,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
   <script src="script.js"></script>
+  
+  <footer style="text-align:center; padding: 20px; background: var(--secondary-color); color: var(--text-color); margin-top: 40px;">
+    <p style="margin: 5px 0;">Made with ❤️ by <strong>Tech Tribes</strong></p>
+    <a href="https://api.whatsapp.com/send?phone=917847843688" target="_blank" style="color: var(--text-color); text-decoration: underline;">💬 Chat with us</a>
+  </footer>
+  
 </body>
 </html>
