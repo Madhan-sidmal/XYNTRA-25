@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Sign Language Translator</title>
+  <title>AI sign Language Translator</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -12,7 +12,7 @@
       <button id="toggleThemeBtn">🌗 Toggle Theme</button>
     </div>
   
-    <h1>Sign Language Translator</h1>
+    <h1>AI sign Language Translator</h1>
   
     <div class="app-container">
       <div class="card">
@@ -52,49 +52,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     
-    <!-- Add this at the end of your HTML file -->
-    <script type="module" src="script.js">
-
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-      
-        const firebaseConfig = {
-          apiKey: "AIzaSyAwBxRozabMmPPy1p1Si5ojmmq086obp_M",
-          authDomain: "xyntra-10f99.firebaseapp.com",
-          projectId: "xyntra-10f99",
-          storageBucket: "xyntra-10f99.firebasestorage.app",
-          messagingSenderId: "738527346926",
-          appId: "1:738527346926:web:3cf05c1787783a0d19b3ff",
-          measurementId: "G-BZ5DNWS67B"
-        };
-      
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-      
-        const provider = new GoogleAuthProvider();
-      
-        // Trigger sign-in with Google
-        document.getElementById("loginBtn").addEventListener("click", () => {
-          signInWithPopup(auth, provider)
-            .then((result) => {
-              const user = result.user;
-              console.log("Logged in as:", user.displayName);
-            })
-            .catch((error) => {
-              console.error("Google sign-in error:", error);
-            });
-        });
-      </script>
-      
-      <!-- Your HTML Button -->
-      <button id="loginBtn">Sign in with Google</button>
-      
-<button onclick="uploadEncryptedGesturesToGoogle()">☁️ Backup to Google</button>
-<button onclick="loadEncryptedGesturesFromGoogle()">🔄 Restore from Google</button>
-      
   
   <!-- Main Script -->
   <script src="script.js"></script>
+  <div id="logo-container">
+    <img src="ai3.png" alt="Tech Tribes Logo" id="logo-image" />
 </body>
 </html>

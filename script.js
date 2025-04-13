@@ -379,29 +379,14 @@ window.addEventListener("DOMContentLoaded", () => {
 // ----------------------
 // Toast Notification Function
 // ----------------------
-
-async function uploadEncryptedGesturesToGoogle() {
-    const encrypted = await encryptData(JSON.stringify(customGestures));
-    const storageRef = firebaseStorage;
-    const refPath = ref(storageRef, `users/${firebaseAuth.currentUser.uid}/gestures.enc`);
-    await uploadString(refPath, encrypted);
-    showToast("Encrypted gestures backed up securely! ☁️");
-  }
-  async function loadEncryptedGesturesFromGoogle() {
-    try {
-      const refPath = ref(firebaseStorage, `users/${firebaseAuth.currentUser.uid}/gestures.enc`);
-      const url = await getDownloadURL(refPath);
-      const response = await fetch(url);
-      const encrypted = await response.text();
-      const decrypted = await decryptData(encrypted);
-      const parsed = JSON.parse(decrypted);
-      customGestures.length = 0;
-      customGestures.push(...parsed);
-      renderSavedGestures();
-      showToast("Gestures restored from cloud.");
-    } catch (err) {
-      showToast("No backup found or error loading.");
-      console.error(err);
-    }
-  }
-  
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 100);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
