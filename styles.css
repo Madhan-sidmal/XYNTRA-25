@@ -328,5 +328,12 @@ body {
   canvas {
     background: #000;
   }
+  #output {
+    display: block; /* Ensure it’s visible */
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;  /* Bring it above the video if needed */
+  }
   
   

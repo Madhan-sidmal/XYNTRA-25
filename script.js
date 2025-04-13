@@ -14,7 +14,7 @@ const gestureHistory = [];
 let lastSpoken = "", speakTimeout, latestLandmarks = null;
 const customGestures = [];
 
-// Instead of directly reading localStorage, load and decrypt saved gestures
+// Load stored gestures securely
 async function loadStoredGestures() {
   const stored = localStorage.getItem("savedGestures");
   if (stored) {
@@ -33,16 +33,9 @@ loadStoredGestures();
 // Encryption Functions (Using AES-GCM)
 // ----------------------
 async function getCryptoKey() {
-  // For demonstration, using a hardcoded key.
-  // In production, use a secure method to generate/store keys.
+  // For demo purposes, using a fixed key.
   const rawKey = new TextEncoder().encode("mysecretkey12345"); // 16-byte key for AES-128
-  return crypto.subtle.importKey(
-    "raw",
-    rawKey,
-    "AES-GCM",
-    false,
-    ["encrypt", "decrypt"]
-  );
+  return crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
 
 async function encryptData(plainText) {
@@ -50,17 +43,11 @@ async function encryptData(plainText) {
   const data = encoder.encode(plainText);
   const key = await getCryptoKey();
   const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for AES-GCM
-  const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    data
-  );
-  // Combine IV and encrypted data for storage
+  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
   const buffer = new Uint8Array(encrypted);
   const combined = new Uint8Array(iv.length + buffer.length);
   combined.set(iv);
   combined.set(buffer, iv.length);
-  // Convert to Base64 string
   return btoa(String.fromCharCode(...combined));
 }
 
@@ -69,13 +56,8 @@ async function decryptData(cipherText) {
   const iv = combined.slice(0, 12);
   const data = combined.slice(12);
   const key = await getCryptoKey();
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
-    key,
-    data
-  );
-  const decoder = new TextDecoder();
-  return decoder.decode(decrypted);
+  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+  return new TextDecoder().decode(decrypted);
 }
 
 // ----------------------
@@ -98,15 +80,43 @@ function compareGestures(a, b) {
   return Math.sqrt(total / a.length);
 }
 
-// Monitor hand position and give feedback if hand is too close to edge
+// ----------------------
+// Enhanced Hand Mapping Detail Function (21-Point Mapping)
+// ----------------------
+function drawHandMappingDetail(ctx, landmarks) {
+  ctx.fillStyle = "yellow";
+  ctx.font = "12px Arial";
+  // Loop over all 21 landmarks
+  landmarks.forEach((point, index) => {
+    const x = point.x * canvasElement.width;
+    const y = point.y * canvasElement.height;
+    // Draw a small circle at each landmark
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    // Draw the landmark index number (offset for clarity)
+    ctx.fillText(index, x + 4, y - 4);
+  });
+}
+
+// ----------------------
+// Hand Position Monitoring
+// ----------------------
 function monitorHandPosition(landmarks) {
   const xs = landmarks.map(p => p.x);
   const ys = landmarks.map(p => p.y);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
-  if (minX < 0.1 || maxX > 0.9 || minY < 0.1 || maxY > 0.9) {
-    showToast("Adjust hand position for better tracking!");
+  const boxWidth = maxX - minX;
+  const boxHeight = maxY - minY;
+  let message = "";
+  // Adjust thresholds (normalized values); tweak based on your camera and testing
+  if (boxWidth < 0.15 || boxHeight < 0.15) {
+    message = "Hand is too far from the camera!";
+  } else if (boxWidth > 0.65 || boxHeight > 0.65) {
+    message = "Hand is too close to the camera!";
   }
+  return message;
 }
 
 // ----------------------
@@ -138,7 +148,7 @@ async function saveCustomGesture() {
   try {
     const encrypted = await encryptData(JSON.stringify(customGestures));
     localStorage.setItem("savedGestures", encrypted);
-  } catch(e) {
+  } catch (e) {
     console.error("Encryption failed:", e);
   }
   showToast(`Gesture "${label}" saved securely!`);
@@ -224,8 +234,12 @@ hands.onResults((results) => {
   if (results.multiHandLandmarks) {
     for (const landmarks of results.multiHandLandmarks) {
       latestLandmarks = landmarks;
+      // Draw connectors and landmarks
       drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
       drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', radius: 5 });
+      
+      // Draw the 21-point hand mapping detail (landmark indices)
+      drawHandMappingDetail(canvasCtx, landmarks);
       
       // Display confidence score if available
       if (results.multiHandedness && results.multiHandedness.length > 0) {
@@ -237,8 +251,11 @@ hands.onResults((results) => {
         canvasCtx.fillText(`Confidence: ${(confidence * 100).toFixed(1)}%`, 20, 32);
       }
       
-      // Monitor hand position for better tracking
-      monitorHandPosition(landmarks);
+      // Monitor hand position and show warning if too far or too close
+      const posMessage = monitorHandPosition(landmarks);
+      if (posMessage) {
+        showToast(posMessage);
+      }
       
       let gesture = "Unknown";
       let bestMatch = { label: "Unknown", score: Infinity };
@@ -276,6 +293,7 @@ hands.onResults((results) => {
       document.getElementById("history").innerHTML = "History:<br>" + gestureHistory.join("<br>");
     }
   }
+
   canvasCtx.restore();
 });
 
@@ -361,14 +379,29 @@ window.addEventListener("DOMContentLoaded", () => {
 // ----------------------
 // Toast Notification Function
 // ----------------------
-function showToast(message) {
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 100);
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 500);
-  }, 3000);
-}
+
+async function uploadEncryptedGesturesToGoogle() {
+    const encrypted = await encryptData(JSON.stringify(customGestures));
+    const storageRef = firebaseStorage;
+    const refPath = ref(storageRef, `users/${firebaseAuth.currentUser.uid}/gestures.enc`);
+    await uploadString(refPath, encrypted);
+    showToast("Encrypted gestures backed up securely! ☁️");
+  }
+  async function loadEncryptedGesturesFromGoogle() {
+    try {
+      const refPath = ref(firebaseStorage, `users/${firebaseAuth.currentUser.uid}/gestures.enc`);
+      const url = await getDownloadURL(refPath);
+      const response = await fetch(url);
+      const encrypted = await response.text();
+      const decrypted = await decryptData(encrypted);
+      const parsed = JSON.parse(decrypted);
+      customGestures.length = 0;
+      customGestures.push(...parsed);
+      renderSavedGestures();
+      showToast("Gestures restored from cloud.");
+    } catch (err) {
+      showToast("No backup found or error loading.");
+      console.error(err);
+    }
+  }
+  

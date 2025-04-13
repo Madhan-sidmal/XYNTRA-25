@@ -16,8 +16,11 @@
   
     <div class="app-container">
       <div class="card">
-        <video id="webcam" autoplay playsinline width="640" height="480"></video>
-        <canvas id="output" width="640" height="480" style="display: none;"></canvas>
+        <div id="camera-container" style="position: relative; width: 640px; height: 480px;">
+            <video id="webcam" autoplay playsinline width="640" height="480"></video>
+            <canvas id="output" width="640" height="480" style="position: absolute; top: 0; left: 0;"></canvas>
+          </div>
+                
         <h2 id="gesture-label">Gesture: <span id="label">Detecting...</span></h2>
         <p id="ghost-label" style="opacity: 0.5; font-size: 14px; margin-top: 4px;">Best guess: ...</p>
 
@@ -49,6 +52,48 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     
+    <!-- Add this at the end of your HTML file -->
+    <script type="module" src="script.js">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+      
+        const firebaseConfig = {
+          apiKey: "AIzaSyAwBxRozabMmPPy1p1Si5ojmmq086obp_M",
+          authDomain: "xyntra-10f99.firebaseapp.com",
+          projectId: "xyntra-10f99",
+          storageBucket: "xyntra-10f99.firebasestorage.app",
+          messagingSenderId: "738527346926",
+          appId: "1:738527346926:web:3cf05c1787783a0d19b3ff",
+          measurementId: "G-BZ5DNWS67B"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+      
+        const provider = new GoogleAuthProvider();
+      
+        // Trigger sign-in with Google
+        document.getElementById("loginBtn").addEventListener("click", () => {
+          signInWithPopup(auth, provider)
+            .then((result) => {
+              const user = result.user;
+              console.log("Logged in as:", user.displayName);
+            })
+            .catch((error) => {
+              console.error("Google sign-in error:", error);
+            });
+        });
+      </script>
+      
+      <!-- Your HTML Button -->
+      <button id="loginBtn">Sign in with Google</button>
+      
+<button onclick="uploadEncryptedGesturesToGoogle()">☁️ Backup to Google</button>
+<button onclick="loadEncryptedGesturesFromGoogle()">🔄 Restore from Google</button>
+      
+  
   <!-- Main Script -->
   <script src="script.js"></script>
 </body>
